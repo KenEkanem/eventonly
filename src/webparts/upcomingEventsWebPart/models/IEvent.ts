@@ -1,4 +1,4 @@
-export type EventCategory = 'townhall' | 'celebration' | 'training' | 'social' | 'holiday' | 'custom';
+export type EventCategory = 'townhall' | 'celebration' | 'training' | 'social' | 'holiday' | 'quarterly' | 'custom';
 export type BadgeColorScheme = 'primary' | 'accent' | 'secondary' | 'muted' | 'custom';
 
 export interface IEvent {
@@ -16,5 +16,6 @@ export interface IEvent {
   badgeColorScheme: BadgeColorScheme;
   iconType: string;
   isHoliday?: boolean;
+  userAdded?: boolean;
   sortOrder?: number;
 }

@@ -25,6 +25,28 @@
       "videoUrl": "",
       "categories": []
     },
+    "webApiPermissionRequests": [
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Calendars.ReadWrite"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "ChannelMessage.Send"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Mail.Send"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Sites.ReadWrite.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "User.Read"
+      }
+    ],
     "features": [
       {
         "title": "eventonly Feature",

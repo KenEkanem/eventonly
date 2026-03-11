@@ -18,7 +18,7 @@ export interface IManageEventsPropertyPaneProps {
 interface IManageEventsPropertyPaneInternalProps extends IManageEventsPropertyPaneProps, IPropertyPaneCustomFieldProps {
 }
 
-const categoryOptions: EventCategory[] = ['townhall', 'celebration', 'training', 'social', 'custom'];
+const categoryOptions: EventCategory[] = ['townhall', 'celebration', 'training', 'social', 'holiday', 'quarterly', 'custom'];
 const badgeOptions: BadgeColorScheme[] = ['primary', 'accent', 'secondary', 'muted', 'custom'];
 const iconOptions: string[] = ['users', 'party-popper', 'trophy', 'camera', 'calendar', 'briefcase', 'flag', 'star', 'calendar-star'];
 

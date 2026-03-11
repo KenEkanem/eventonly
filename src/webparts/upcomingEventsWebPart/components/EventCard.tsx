@@ -22,6 +22,9 @@ export interface IEventCardProps {
   showTimeMetadata: boolean;
   showLocationMetadata: boolean;
   dateLabel: string;
+  isEditor: boolean;
+  onEditEvent?: (event: IEvent) => void;
+  onDeleteEvent?: (event: IEvent) => void;
 }
 
 const resolveIcon = (iconType: string): JSX.Element => {
@@ -50,18 +53,28 @@ const resolveIcon = (iconType: string): JSX.Element => {
 };
 
 export const EventCard: React.FC<IEventCardProps> = (props: IEventCardProps) => {
+  const [hovered, setHovered] = React.useState<boolean>(false);
   const categoryClassMap: Record<IEvent['category'], string> = {
     townhall: styles.categoryTownhall,
     celebration: styles.categoryCelebration,
     training: styles.categoryTraining,
     social: styles.categorySocial,
     holiday: styles.categoryHoliday,
+    quarterly: styles.categoryQuarterly,
     custom: styles.categoryCustom
   };
   const categoryClass = categoryClassMap[props.event.category] || styles.categoryCustom;
+  const isHoliday = !!props.event.isHoliday || props.event.category === 'holiday';
+  const isUserAdded = !isHoliday;
+  const showActionControls = props.isEditor && isUserAdded;
 
   return (
-    <article className={`${styles.eventCard} ${styles[props.cardLayout]} ${categoryClass}`} aria-label={props.event.title}>
+    <article
+      className={`${styles.eventCard} ${styles[props.cardLayout]} ${categoryClass} ${isUserAdded ? styles.userAddedCard : ''}`}
+      aria-label={props.event.title}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       {props.showEventImages && props.event.imageUrl && (
         <div className={styles.cardImageWrap}>
           <img
@@ -73,14 +86,38 @@ export const EventCard: React.FC<IEventCardProps> = (props: IEventCardProps) => 
         </div>
       )}
       <div className={styles.cardContent}>
-        <div className={styles.cardHeader}>
-          <span className={styles.iconCircle}>{resolveIcon(props.event.iconType)}</span>
-          <div className={styles.cardHeaderText}>
+        <div className={styles.cardRowTitle}>
+          <div className={styles.cardHeader}>
+            <span className={styles.iconCircle}>{resolveIcon(props.event.iconType)}</span>
             <h3 className={styles.cardTitle}>{props.event.title}</h3>
-            <p className={styles.cardDescription}>{props.event.description}</p>
           </div>
-          <span className={styles.badge}>{props.event.badgeText}</span>
+          <div className={styles.topRightSlot}>
+            {showActionControls && (
+              <div className={`${styles.actionControls} ${hovered ? styles.actionControlsVisible : ''}`}>
+                <button
+                  type="button"
+                  className={styles.actionButton}
+                  onClick={() => props.onEditEvent?.(props.event)}
+                  aria-label={`Edit ${props.event.title}`}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.actionButton} ${styles.deleteButton}`}
+                  onClick={() => props.onDeleteEvent?.(props.event)}
+                  aria-label={`Delete ${props.event.title}`}
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+            <span className={styles.badge}>{props.event.badgeText || (isHoliday ? 'Holiday' : 'Event')}</span>
+          </div>
         </div>
+
+        <p className={styles.cardDescription}>{props.event.description}</p>
+
         <div className={styles.metadataRow}>
           {props.showDateMetadata && (
             <span className={styles.metaPill}><CalendarDays className={styles.metaIcon} aria-hidden="true" />{props.dateLabel}</span>
@@ -92,11 +129,6 @@ export const EventCard: React.FC<IEventCardProps> = (props: IEventCardProps) => 
             <span className={styles.metaPill}><MapPin className={styles.metaIcon} aria-hidden="true" />{props.event.location}</span>
           )}
         </div>
-        {props.event.detailPageUrl && (
-          <a href={props.event.detailPageUrl} className={styles.detailLink}>
-            View Details
-          </a>
-        )}
       </div>
     </article>
   );

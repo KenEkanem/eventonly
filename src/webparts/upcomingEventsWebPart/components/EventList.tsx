@@ -6,12 +6,15 @@ import { formatEventDate } from '../utils/dateHelpers';
 
 export interface IEventListProps {
   events: IEvent[];
+  isEditor: boolean;
   cardLayout: 'horizontal' | 'vertical';
   showEventImages: boolean;
   showDateMetadata: boolean;
   showTimeMetadata: boolean;
   showLocationMetadata: boolean;
   dateFormat: string;
+  onEditEvent?: (event: IEvent) => void;
+  onDeleteEvent?: (event: IEvent) => void;
 }
 
 export const EventList: React.FC<IEventListProps> = (props: IEventListProps) => {
@@ -25,12 +28,15 @@ export const EventList: React.FC<IEventListProps> = (props: IEventListProps) => 
         <EventCard
           key={event.id}
           event={event}
+          isEditor={props.isEditor}
           cardLayout={props.cardLayout}
           showEventImages={props.showEventImages}
           showDateMetadata={props.showDateMetadata}
           showTimeMetadata={props.showTimeMetadata}
           showLocationMetadata={props.showLocationMetadata}
           dateLabel={formatEventDate(event.date, props.dateFormat)}
+          onEditEvent={props.onEditEvent}
+          onDeleteEvent={props.onDeleteEvent}
         />
       ))}
     </div>

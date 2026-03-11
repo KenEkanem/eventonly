@@ -1,5 +1,6 @@
 import { ICalendarSettings } from '../models/ICalendarSettings';
 import { IEvent } from '../models/IEvent';
+import { ICreateEventPayload, PublishingChannel } from '../../../services/GraphService';
 
 export interface IUpcomingEventsWebPartProps {
   bannerTitle: string;
@@ -21,4 +22,15 @@ export interface IUpcomingEventsWebPartProps {
   showDateMetadata: boolean;
   showTimeMetadata: boolean;
   showLocationMetadata: boolean;
+  authorizedEditors: string;
+  siteId: string;
+  listId: string;
+  teamId: string;
+  channelId: string;
+  groupId: string;
+  vivaCommunityId: string;
+  isEditor: boolean;
+  currentUserEmail: string;
+  onEventsChange?: (events: IEvent[]) => void;
+  onCreateEvent?: (payload: ICreateEventPayload, channels: PublishingChannel[]) => Promise<void>;
 }

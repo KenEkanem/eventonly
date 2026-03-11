@@ -9,6 +9,7 @@ import {
   PropertyPaneToggle
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
+import { MSGraphClientV3 } from '@microsoft/sp-http';
 
 import UpcomingEventsWebPart from './components/UpcomingEventsWebPart';
 import { IUpcomingEventsWebPartProps } from './components/IUpcomingEventsWebPartProps';
@@ -16,6 +17,7 @@ import { IEvent } from './models/IEvent';
 import { ICalendarSettings } from './models/ICalendarSettings';
 import { defaultEvents } from './services/EventService';
 import { ManageEventsPropertyPane } from './controls/ManageEventsPropertyPane';
+import { GraphService, ICreateEventPayload, PublishingChannel } from '../../services/GraphService';
 
 export interface IUpcomingEventsWebPartWebPartProps extends IUpcomingEventsWebPartProps {
 }
@@ -30,12 +32,25 @@ const defaultCalendarSettings: ICalendarSettings = {
 };
 
 export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<IUpcomingEventsWebPartWebPartProps> {
+  private graphService?: GraphService;
+
   public render(): void {
+    const currentUserEmail = (this.context.pageContext.user.email || '').trim().toLowerCase();
+    const allowedEditors = (this.properties.authorizedEditors || '')
+      .split(',')
+      .map((email: string) => email.trim().toLowerCase())
+      .filter((email: string) => !!email);
+    const isEditor = !!currentUserEmail && allowedEditors.indexOf(currentUserEmail) > -1;
+
     const element: React.ReactElement<IUpcomingEventsWebPartProps> = React.createElement(
       UpcomingEventsWebPart,
       {
         ...this.properties,
+        currentUserEmail,
+        isEditor,
         events: this.normalizeEvents(this.properties.events),
+        onEventsChange: this.onEventsChange,
+        onCreateEvent: this.onCreateEvent,
         calendarSettings: {
           ...defaultCalendarSettings,
           ...(this.properties.calendarSettings || {})
@@ -85,11 +100,21 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
     this.properties.showDateMetadata = this.properties.showDateMetadata ?? true;
     this.properties.showTimeMetadata = this.properties.showTimeMetadata ?? true;
     this.properties.showLocationMetadata = this.properties.showLocationMetadata ?? true;
+    this.properties.authorizedEditors = this.properties.authorizedEditors || '';
+    this.properties.siteId = this.properties.siteId || '';
+    this.properties.listId = this.properties.listId || '';
+    this.properties.teamId = this.properties.teamId || '';
+    this.properties.channelId = this.properties.channelId || '';
+    this.properties.groupId = this.properties.groupId || '';
+    this.properties.vivaCommunityId = this.properties.vivaCommunityId || '';
 
     this.properties.calendarSettings = {
       ...defaultCalendarSettings,
       ...(this.properties.calendarSettings || {})
     };
+
+    const graphClient: MSGraphClientV3 = await this.context.msGraphClientFactory.getClient('3');
+    this.graphService = new GraphService(graphClient);
 
     return Promise.resolve();
   }
@@ -155,6 +180,34 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
                 }),
                 PropertyPaneToggle('autoRefreshHolidays', {
                   label: 'Auto-refresh holidays annually'
+                })
+              ]
+            },
+            {
+              groupName: 'Editor Access & Publishing Targets',
+              groupFields: [
+                PropertyPaneTextField('authorizedEditors', {
+                  label: 'Authorized editors (comma-separated emails)',
+                  multiline: true,
+                  description: 'Only these users can add/edit/delete events.'
+                }),
+                PropertyPaneTextField('siteId', {
+                  label: 'Intranet site ID'
+                }),
+                PropertyPaneTextField('listId', {
+                  label: 'Intranet list ID'
+                }),
+                PropertyPaneTextField('teamId', {
+                  label: 'Teams team ID'
+                }),
+                PropertyPaneTextField('channelId', {
+                  label: 'Teams channel ID'
+                }),
+                PropertyPaneTextField('groupId', {
+                  label: 'Teams group ID'
+                }),
+                PropertyPaneTextField('vivaCommunityId', {
+                  label: 'Viva Engage community ID'
                 })
               ]
             },
@@ -268,4 +321,25 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
       sortOrder: event.sortOrder ?? index
     }));
   }
+
+  private readonly onEventsChange = (events: IEvent[]): void => {
+    this.properties.events = this.normalizeEvents(events);
+    this.render();
+  };
+
+  private readonly onCreateEvent = async (payload: ICreateEventPayload, channels: PublishingChannel[]): Promise<void> => {
+    if (!this.graphService) {
+      return;
+    }
+
+    await this.graphService.createEvent(payload, channels, {
+      siteId: this.properties.siteId,
+      listId: this.properties.listId,
+      teamId: this.properties.teamId,
+      channelId: this.properties.channelId,
+      groupId: this.properties.groupId,
+      vivaCommunityId: this.properties.vivaCommunityId,
+      currentUserEmail: this.context.pageContext.user.email || ''
+    });
+  };
 }
