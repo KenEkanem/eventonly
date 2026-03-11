@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { addDays, endOfMonth, format, isSameDay, isSameMonth, startOfMonth, startOfWeek } from 'date-fns';
-import styles from './UpcomingEventsWebPart.module.scss';
 import { IEvent } from '../models/IEvent';
 
 export interface IEventSectionProps {
@@ -92,21 +91,21 @@ export const EventSection: React.FC<IEventSectionProps> = (props: IEventSectionP
   };
 
   return (
-    <section className={styles['event-section-container']} aria-label="Events section">
-      <article className={styles['event-section-calendar-card']}>
-        <header className={styles['event-section-calendar-header']}>
+    <section className="event-section-container" aria-label="Events section">
+      <article className="event-section-calendar-card">
+        <header className="event-section-calendar-header">
           <button
             type="button"
-            className={styles['event-section-nav-button']}
+            className="event-section-nav-button"
             onClick={goPrevMonth}
             aria-label="Go to previous month"
           >
             ‹
           </button>
-          <h3 className={styles['event-section-calendar-title']}>{format(displayMonth, 'MMMM yyyy')}</h3>
+          <h3 className="event-section-calendar-title">{format(displayMonth, 'MMMM yyyy')}</h3>
           <button
             type="button"
-            className={styles['event-section-nav-button']}
+            className="event-section-nav-button"
             onClick={goNextMonth}
             aria-label="Go to next month"
           >
@@ -114,13 +113,13 @@ export const EventSection: React.FC<IEventSectionProps> = (props: IEventSectionP
           </button>
         </header>
 
-        <div className={styles['event-section-weekdays']} aria-hidden="true">
+        <div className="event-section-weekdays" aria-hidden="true">
           {weekdayLabels.map((weekday: string) => (
-            <span key={weekday} className={styles['event-section-weekday']}>{weekday}</span>
+            <span key={weekday} className="event-section-weekday">{weekday}</span>
           ))}
         </div>
 
-        <div className={styles['event-section-date-grid']}>
+        <div className="event-section-date-grid">
           {gridDays.map((day: Date) => {
             const key = toDayKey(day);
             const count = dayEventCount[key] || 0;
@@ -133,19 +132,19 @@ export const EventSection: React.FC<IEventSectionProps> = (props: IEventSectionP
                 type="button"
                 key={key}
                 className={[
-                  styles['event-section-day-cell'],
-                  isSelected ? styles['event-section-day-selected'] : '',
-                  !isSelected && isToday ? styles['event-section-day-today'] : '',
-                  isOtherMonth ? styles['event-section-day-other-month'] : ''
+                  'event-section-day-cell',
+                  isSelected ? 'event-section-day-selected' : '',
+                  !isSelected && isToday ? 'event-section-day-today' : '',
+                  isOtherMonth ? 'event-section-day-other-month' : ''
                 ].join(' ').trim()}
                 aria-label={`Select ${format(day, 'EEEE, MMMM d, yyyy')}`}
                 onClick={() => setSelectedDate(day)}
               >
-                <span className={styles['event-section-day-number']}>{format(day, 'd')}</span>
+                <span className="event-section-day-number">{format(day, 'd')}</span>
                 {count > 0 && (
-                  <span className={styles['event-section-dots']} aria-hidden="true">
+                  <span className="event-section-dots" aria-hidden="true">
                     {buildDotIndexes(count).map((index: number) => (
-                      <span key={index} className={styles['event-section-dot']} />
+                      <span key={index} className="event-section-dot" />
                     ))}
                   </span>
                 )}
@@ -155,23 +154,23 @@ export const EventSection: React.FC<IEventSectionProps> = (props: IEventSectionP
         </div>
       </article>
 
-      <article className={styles['event-section-upcoming-card']}>
-        <h3 className={styles['event-section-upcoming-title']}>Upcoming Events</h3>
-        <div className={styles['event-section-upcoming-list']}>
+      <article className="event-section-upcoming-card">
+        <h3 className="event-section-upcoming-title">Upcoming Events</h3>
+        <div className="event-section-upcoming-list">
           {filteredUpcoming.map((event: IEvent) => (
-            <div key={event.id} className={styles['event-section-item']} tabIndex={0} role="article" aria-label={event.title}>
-              <div className={styles['event-section-date-badge']}>
-                <span className={styles['event-section-date-day']}>{format(event.date, 'd')}</span>
-                <span className={styles['event-section-date-month']}>{format(event.date, 'MMM')}</span>
+            <div key={event.id} className="event-section-item" tabIndex={0} role="article" aria-label={event.title}>
+              <div className="event-section-date-badge">
+                <span className="event-section-date-day">{format(event.date, 'd')}</span>
+                <span className="event-section-date-month">{format(event.date, 'MMM')}</span>
               </div>
 
-              <div className={styles['event-section-item-content']}>
-                <h4 className={styles['event-section-item-title']}>{event.title}</h4>
-                <p className={styles['event-section-item-time']}>{event.time} - {event.time === 'All Day' ? 'All Day' : 'Scheduled'}</p>
-                <p className={styles['event-section-item-location']}>{event.location}</p>
+              <div className="event-section-item-content">
+                <h4 className="event-section-item-title">{event.title}</h4>
+                <p className="event-section-item-time">{event.time} - {event.time === 'All Day' ? 'All Day' : 'Scheduled'}</p>
+                <p className="event-section-item-location">{event.location}</p>
               </div>
 
-              <span className={styles['event-section-status-pill']}>{getEventStatus(event)}</span>
+              <span className="event-section-status-pill">{getEventStatus(event)}</span>
             </div>
           ))}
         </div>

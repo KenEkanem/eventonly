@@ -711,6 +711,7 @@
   }
 }
 
+:global {
 .event-section-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -982,6 +983,7 @@
   .event-section-item {
     min-height: 40px;
   }
+}
 }
 
 @media (max-width: 480px) {
