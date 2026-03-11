@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "upcoming-events-web-part-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/upcomingEventsWebPart/UpcomingEventsWebPartWebPart.js",
+          "manifest": "./src/webparts/upcomingEventsWebPart/UpcomingEventsWebPartWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "UpcomingEventsWebPartWebPartStrings": "lib/webparts/upcomingEventsWebPart/loc/{locale}.js"
+  }
+}

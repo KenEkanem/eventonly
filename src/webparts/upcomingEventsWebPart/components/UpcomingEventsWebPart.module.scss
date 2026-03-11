@@ -1,0 +1,362 @@
+.upcomingEventsWebPart {
+  --primary: 205 88% 46%;
+  --accent: 40 95% 55%;
+  --muted: 210 16% 93%;
+  --surface: #ffffff;
+  --text: #0f172a;
+  color: var(--text);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.bannerTitle {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.bannerDescription {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.countBadge {
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.loadingState,
+.warningState,
+.errorState,
+.emptyState {
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.warningState {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.calendarLeft {
+  grid-auto-flow: row;
+}
+
+@media (min-width: 1024px) {
+  .mainGrid {
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  }
+
+  .calendarRight {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  }
+
+  .calendarRight .calendarPane {
+    grid-column: 2;
+  }
+
+  .calendarRight .listPane {
+    grid-column: 1;
+    grid-row: 1;
+  }
+}
+
+.calendarContainer {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.calendarHeader {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.calendarThemeDefault {
+  background: #ffffff;
+}
+
+.calendarThemeMinimal {
+  background: #f8fafc;
+}
+
+.calendarThemeColorful {
+  background: linear-gradient(180deg, #eff6ff, #f8fafc);
+}
+
+.dayPicker :global(.rdp-months) {
+  justify-content: center;
+}
+
+.dayPicker :global(.rdp-caption_label) {
+  font-weight: 700;
+}
+
+.dayPicker :global(.rdp-day) {
+  border-radius: 999px;
+  transition: all 300ms ease;
+}
+
+.today {
+  background: hsl(var(--accent) / 0.18) !important;
+  color: hsl(var(--primary)) !important;
+  font-weight: 800 !important;
+}
+
+.hasEventDot {
+  position: relative;
+}
+
+.hasEventDot::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.hasEventBold {
+  font-weight: 800 !important;
+  color: hsl(var(--primary)) !important;
+}
+
+.hasEventHighlight {
+  font-weight: 700 !important;
+  color: hsl(var(--primary)) !important;
+  background: hsl(var(--primary) / 0.15) !important;
+}
+
+.hasMultipleEvents {
+  box-shadow: inset 0 0 0 2px hsl(var(--accent) / 0.7);
+}
+
+.clearDateFilter {
+  margin-top: 8px;
+  border: none;
+  background: transparent;
+  color: hsl(var(--primary));
+  padding: 0;
+  cursor: pointer;
+}
+
+.calendarLegend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+
+.legendIndicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: hsl(var(--primary) / 0.65);
+}
+
+.calendarLegendSubtext {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.eventList {
+  display: grid;
+  gap: 12px;
+}
+
+.eventCard {
+  border-radius: 14px;
+  border: 1px solid #dbeafe;
+  overflow: hidden;
+  background: #f8fafc;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+
+.eventCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.16);
+}
+
+.eventCard.horizontal {
+  display: grid;
+  grid-template-columns: minmax(150px, 192px) minmax(0, 1fr);
+}
+
+.eventCard.vertical {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.cardImageWrap {
+  overflow: hidden;
+  min-height: 140px;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 300ms ease;
+}
+
+.eventCard:hover .cardImage {
+  transform: scale(1.1);
+}
+
+.cardContent {
+  padding: 14px;
+}
+
+.cardHeader {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.cardHeaderText {
+  min-width: 0;
+}
+
+.iconCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+}
+
+.cardIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.cardDescription {
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 0.92rem;
+}
+
+.badge {
+  background: #0ea5e9;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  text-transform: capitalize;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.metadataRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.metaPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #eff6ff;
+  font-size: 12px;
+}
+
+.metaIcon {
+  width: 13px;
+  height: 13px;
+}
+
+.detailLink {
+  display: inline-block;
+  margin-top: 10px;
+  color: hsl(var(--primary));
+  font-weight: 700;
+}
+
+.categoryTownhall {
+  background: linear-gradient(95deg, #dbeafe 0%, #f8fafc 70%);
+}
+
+.categoryCelebration {
+  background: linear-gradient(95deg, #fef3c7 0%, #fff7ed 70%);
+}
+
+.categoryTraining {
+  background: linear-gradient(95deg, #dcfce7 0%, #f8fafc 70%);
+}
+
+.categorySocial {
+  background: linear-gradient(95deg, #e0f2fe 0%, #f8fafc 70%);
+}
+
+.categoryHoliday {
+  background: linear-gradient(95deg, #fee2e2 0%, #fef2f2 70%);
+}
+
+.categoryCustom {
+  background: linear-gradient(95deg, #f1f5f9 0%, #ffffff 70%);
+}
+
+@media (max-width: 680px) {
+  .eventCard.horizontal {
+    grid-template-columns: 1fr;
+  }
+
+  .bannerTitle {
+    font-size: 1.5rem;
+  }
+}
+
+@media print {
+  .calendarPane,
+  .clearDateFilter {
+    display: none !important;
+  }
+
+  .eventCard {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}
