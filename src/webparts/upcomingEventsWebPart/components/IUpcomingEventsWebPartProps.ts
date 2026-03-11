@@ -1,6 +1,7 @@
 import { ICalendarSettings } from '../models/ICalendarSettings';
 import { IEvent } from '../models/IEvent';
 import { ICreateEventPayload, PublishingChannel } from '../../../services/GraphService';
+import { WebPartContext } from '@microsoft/sp-webpart-base';
 
 export interface IUpcomingEventsWebPartProps {
   bannerTitle: string;
@@ -35,6 +36,7 @@ export interface IUpcomingEventsWebPartProps {
   emailRecipients: string;
   isEditor: boolean;
   currentUserEmail: string;
+  context: WebPartContext;
   onEventsChange?: (events: IEvent[]) => void;
   onCreateEvent?: (payload: ICreateEventPayload, channels: PublishingChannel[]) => Promise<void>;
 }

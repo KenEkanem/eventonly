@@ -1,267 +1,358 @@
 import * as React from 'react';
+import { Calendar, Loader2, X } from 'lucide-react';
+import { WebPartContext } from '@microsoft/sp-webpart-base';
 import styles from './UpcomingEventsWebPart.module.scss';
-import { EventRecurrence, EventType, ICreateEventPayload, PublishingChannel } from '../../../services/GraphService';
 
-interface IEventFormState {
+interface IAddEventModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onEventCreated: () => void;
+  context: WebPartContext;
+  siteId: string;
+  listId: string;
+  groupId: string;
+  emailRecipients: string;
+}
+
+interface IModalFormState {
   title: string;
   date: string;
   time: string;
-  endTime: string;
   location: string;
-  type: EventType;
-  recurrence: EventRecurrence;
+  type: string;
+  recurrence: string;
   description: string;
   imageUrl: string;
-  channels: PublishingChannel[];
+  channels: string[];
+  reminder: string;
 }
 
-export interface IAddEventModalProps {
-  isOpen: boolean;
-  busy: boolean;
-  onClose: () => void;
-  onSubmit: (payload: ICreateEventPayload, channels: PublishingChannel[]) => Promise<void>;
-}
-
-const defaultFormState: IEventFormState = {
-  title: '',
-  date: '',
-  time: '10:00 AM',
-  endTime: '11:00 AM',
-  location: 'Conference Room / Teams',
-  type: 'townhall',
-  recurrence: 'none',
-  description: '',
-  imageUrl: '',
-  channels: ['intranet']
-};
-
-const toIsoDateTime = (date: string, timeValue: string): string => {
+const convertTo24hr = (timeValue: string, addHours: number = 0): string => {
   const raw = (timeValue || '').trim().toUpperCase();
-  const match = raw.match(/^(\d{1,2}):(\d{2})(?:\s?(AM|PM))?$/);
+  const amPm = raw.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/);
 
-  if (match) {
-    let hour = parseInt(match[1], 10);
-    const minute = parseInt(match[2], 10);
-    const meridiem = match[3];
+  let hours: number;
+  let minutes: number;
 
-    if (meridiem === 'PM' && hour < 12) {
-      hour += 12;
+  if (amPm) {
+    hours = parseInt(amPm[1], 10);
+    minutes = parseInt(amPm[2], 10);
+    const suffix = amPm[3];
+
+    if (suffix === 'PM' && hours < 12) {
+      hours += 12;
     }
-    if (meridiem === 'AM' && hour === 12) {
-      hour = 0;
+    if (suffix === 'AM' && hours === 12) {
+      hours = 0;
     }
-
-    const dateValue = new Date(`${date}T00:00:00`);
-    dateValue.setHours(hour, minute, 0, 0);
-    return dateValue.toISOString();
+  } else {
+    const regular = raw.match(/^(\d{1,2}):(\d{2})$/);
+    if (!regular) {
+      return '00:00';
+    }
+    hours = parseInt(regular[1], 10);
+    minutes = parseInt(regular[2], 10);
   }
 
-  return new Date(`${date}T${timeValue}`).toISOString();
+  const shifted = new Date();
+  shifted.setHours(hours, minutes, 0, 0);
+  shifted.setHours(shifted.getHours() + addHours);
+
+  const hhRaw = String(shifted.getHours());
+  const mmRaw = String(shifted.getMinutes());
+  const hh = hhRaw.length === 1 ? `0${hhRaw}` : hhRaw;
+  const mm = mmRaw.length === 1 ? `0${mmRaw}` : mmRaw;
+  return `${hh}:${mm}`;
 };
 
 export const AddEventModal: React.FC<IAddEventModalProps> = (props: IAddEventModalProps) => {
-  const [form, setForm] = React.useState<IEventFormState>(defaultFormState);
-  const [error, setError] = React.useState<string>('');
+  const [form, setForm] = React.useState<IModalFormState>({
+    title: '',
+    date: '',
+    time: '10:00',
+    location: 'Conference Room / Teams',
+    type: 'townhall',
+    recurrence: 'none',
+    description: '',
+    imageUrl: '',
+    channels: ['intranet'],
+    reminder: 'none'
+  });
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (props.isOpen) {
-      setForm(defaultFormState);
-      setError('');
+      setForm({
+        title: '',
+        date: '',
+        time: '10:00',
+        location: 'Conference Room / Teams',
+        type: 'townhall',
+        recurrence: 'none',
+        description: '',
+        imageUrl: '',
+        channels: ['intranet'],
+        reminder: 'none'
+      });
+      setError(null);
     }
   }, [props.isOpen]);
+
+  const update = (field: string, value: string): void =>
+    setForm((prev: IModalFormState) => ({ ...prev, [field]: value }));
+
+  const toggleChannel = (ch: string): void =>
+    setForm((prev: IModalFormState) => ({
+      ...prev,
+      channels: prev.channels.indexOf(ch) > -1
+        ? prev.channels.filter((c: string) => c !== ch)
+        : [...prev.channels, ch]
+    }));
+
+  const handleCreateEvent = async (): Promise<void> => {
+    if (!form.title || !form.date) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const graphClient = await props.context.msGraphClientFactory.getClient('3');
+      const startDateTime = `${form.date}T${convertTo24hr(form.time)}:00`;
+      const endDateTime = `${form.date}T${convertTo24hr(form.time, 1)}:00`;
+
+      const payload = {
+        subject: form.title,
+        body: { contentType: 'HTML', content: form.description },
+        start: { dateTime: startDateTime, timeZone: 'UTC' },
+        end: { dateTime: endDateTime, timeZone: 'UTC' },
+        location: { displayName: form.location },
+        categories: [form.type]
+      };
+
+      if (form.channels.indexOf('intranet') > -1 && props.siteId && props.listId) {
+        await graphClient
+          .api(`/sites/${props.siteId}/lists/${props.listId}/items`)
+          .post({
+            fields: {
+              Title: form.title,
+              Description: form.description,
+              EventDate: startDateTime,
+              Location: form.location,
+              EventType: form.type,
+              Recurrence: form.recurrence,
+              ImageUrl: form.imageUrl,
+              UserAdded: true
+            }
+          });
+      }
+
+      if (form.channels.indexOf('teams') > -1 && props.groupId) {
+        await graphClient.api(`/groups/${props.groupId}/calendar/events`).post(payload);
+      }
+
+      if (form.channels.indexOf('email') > -1) {
+        await graphClient.api('/me/sendMail').post({
+          message: {
+            subject: `New Event: ${form.title}`,
+            body: {
+              contentType: 'HTML',
+              content: `
+                <h2>${form.title}</h2>
+                <p>${form.description}</p>
+                <p><strong>Date:</strong> ${form.date}</p>
+                <p><strong>Time:</strong> ${form.time}</p>
+                <p><strong>Location:</strong> ${form.location}</p>
+              `
+            },
+            toRecipients: props.emailRecipients
+              .split(',')
+              .map((email: string) => email.trim())
+              .filter((email: string) => !!email)
+              .map((email: string) => ({
+                emailAddress: { address: email }
+              }))
+          }
+        });
+      }
+
+      props.onClose();
+      props.onEventCreated();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to create event. Check permissions.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!props.isOpen) {
     return null;
   }
 
-  const toggleChannel = (channel: PublishingChannel): void => {
-    setForm((current: IEventFormState) => ({
-      ...current,
-      channels:
-        current.channels.indexOf(channel) > -1
-          ? current.channels.filter((value: PublishingChannel) => value !== channel)
-          : [...current.channels, channel]
-    }));
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
-    setError('');
-
-    if (!form.title.trim()) {
-      setError('Title is required.');
-      return;
-    }
-
-    if (!form.date.trim()) {
-      setError('Date is required.');
-      return;
-    }
-
-    if (form.channels.length === 0) {
-      setError('Select at least one publishing channel.');
-      return;
-    }
-
-    try {
-      await props.onSubmit(
-        {
-          title: form.title.trim(),
-          description: form.description.trim(),
-          startDateTime: toIsoDateTime(form.date, form.time),
-          endDateTime: toIsoDateTime(form.date, form.endTime),
-          location: form.location.trim() || 'Conference Room / Teams',
-          type: form.type,
-          recurrence: form.recurrence,
-          imageUrl: form.imageUrl.trim()
-        },
-        form.channels
-      );
-    } catch (submitError) {
-      const message = submitError instanceof Error ? submitError.message : 'Failed to create event. Check Graph permissions.';
-      setError(message);
-    }
-  };
-
   return (
-    <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Add new event">
-      <form className={styles.modalPanel} onSubmit={handleSubmit}>
+    <div className={styles.modalRoot}>
+      <div className={styles.modalBackdrop} onClick={props.onClose} />
+      <div className={styles.modalPanel}>
         <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>Add New Event</h3>
-          <button type="button" className={styles.modalClose} onClick={props.onClose} aria-label="Close add event modal">
-            x
+          <h2 className={styles.modalTitle}>Add New Event</h2>
+          <button onClick={props.onClose} className={styles.modalClose} type="button" aria-label="Close modal">
+            <X className={styles.modalCloseIcon} />
           </button>
         </div>
 
-        <div className={styles.modalGrid}>
-          <label className={styles.modalLabel}>
-            Title
+        <div className={styles.modalBody}>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Title</label>
             <input
               value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className={styles.modalInput}
+              onChange={(e) => update('title', e.target.value)}
               placeholder="Event title"
-              required
+              className={styles.formInput}
             />
-          </label>
-
-          <div className={styles.modalSplit}>
-            <label className={styles.modalLabel}>
-              Date
-              <input
-                type="date"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className={styles.modalInput}
-                required
-              />
-            </label>
-            <label className={styles.modalLabel}>
-              Time
-              <input
-                value={form.time}
-                onChange={(e) => setForm({ ...form, time: e.target.value })}
-                className={styles.modalInput}
-                placeholder="10:00 AM"
-                required
-              />
-            </label>
           </div>
 
-          <label className={styles.modalLabel}>
-            End Time
-            <input
-              value={form.endTime}
-              onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-              className={styles.modalInput}
-              placeholder="11:00 AM"
-              required
-            />
-          </label>
+          <div className={styles.formGrid2}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Date</label>
+              <div className={styles.dateInputWrap}>
+                <Calendar className={styles.dateIcon} />
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => update('date', e.target.value)}
+                  className={`${styles.formInput} ${styles.formInputWithIcon}`}
+                />
+              </div>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Time</label>
+              <input
+                type="time"
+                value={form.time}
+                onChange={(e) => update('time', e.target.value)}
+                className={styles.formInput}
+              />
+            </div>
+          </div>
 
-          <label className={styles.modalLabel}>
-            Location
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Location</label>
             <input
               value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
-              className={styles.modalInput}
+              onChange={(e) => update('location', e.target.value)}
+              placeholder="Conference Room / Teams"
+              className={styles.formInput}
             />
-          </label>
-
-          <div className={styles.modalSplit}>
-            <label className={styles.modalLabel}>
-              Type
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as EventType })} className={styles.modalInput}>
-                <option value="townhall">townhall</option>
-                <option value="celebration">celebration</option>
-                <option value="holiday">holiday</option>
-                <option value="quarterly">quarterly</option>
-                <option value="training">training</option>
-                <option value="social">social</option>
-                <option value="custom">custom</option>
-              </select>
-            </label>
-            <label className={styles.modalLabel}>
-              Recurrence
-              <select
-                value={form.recurrence}
-                onChange={(e) => setForm({ ...form, recurrence: e.target.value as EventRecurrence })}
-                className={styles.modalInput}
-              >
-                <option value="none">none</option>
-                <option value="daily">daily</option>
-                <option value="weekly">weekly</option>
-                <option value="monthly">monthly</option>
-              </select>
-            </label>
           </div>
 
-          <label className={styles.modalLabel}>
-            Description
+          <div className={styles.formGrid2}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Type</label>
+              <select
+                value={form.type}
+                onChange={(e) => update('type', e.target.value)}
+                className={styles.formSelect}
+              >
+                {['townhall', 'celebration', 'holiday', 'training', 'social', 'quarterly'].map((type: string) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Recurrence</label>
+              <select
+                value={form.recurrence}
+                onChange={(e) => update('recurrence', e.target.value)}
+                className={styles.formSelect}
+              >
+                {['none', 'daily', 'weekly', 'monthly', 'yearly'].map((recurrence: string) => (
+                  <option key={recurrence} value={recurrence}>{recurrence}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Description</label>
             <textarea
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className={styles.modalTextarea}
+              onChange={(e) => update('description', e.target.value)}
               placeholder="Event description"
+              rows={3}
+              className={styles.formTextarea}
             />
-          </label>
+          </div>
 
-          <label className={styles.modalLabel}>
-            Image URL (optional)
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>
+              Image URL <span className={styles.formLabelSub}>(optional)</span>
+            </label>
             <input
-              type="url"
               value={form.imageUrl}
-              onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              className={styles.modalInput}
+              onChange={(e) => update('imageUrl', e.target.value)}
               placeholder="https://..."
+              className={styles.formInput}
             />
-          </label>
+          </div>
 
-          <fieldset className={styles.channelGroup}>
-            <legend>Publishing Channels</legend>
-            <label><input type="checkbox" checked={form.channels.indexOf('intranet') > -1} onChange={() => toggleChannel('intranet')} /> Intranet</label>
-            <label><input type="checkbox" checked={form.channels.indexOf('teams') > -1} onChange={() => toggleChannel('teams')} /> Teams</label>
-            <label><input type="checkbox" checked={form.channels.indexOf('vivaEngage') > -1} onChange={() => toggleChannel('vivaEngage')} /> Viva Engage</label>
-            <label><input type="checkbox" checked={form.channels.indexOf('email') > -1} onChange={() => toggleChannel('email')} /> Email</label>
-          </fieldset>
+          <div className={styles.formGroup}>
+            <div className={styles.formLabelRow}>
+              <label className={styles.formLabel}>Publishing Channels</label>
+              <span className={styles.comingSoonBadge}>Coming Soon</span>
+            </div>
+            <div className={styles.channelsGrid}>
+              {[
+                { id: 'intranet', label: 'Intranet', enabled: true },
+                { id: 'teams', label: 'Teams', enabled: false },
+                { id: 'viva-engage', label: 'Viva Engage', enabled: false },
+                { id: 'email', label: 'Email', enabled: false }
+              ].map(({ id, label, enabled }: { id: string; label: string; enabled: boolean }) => (
+                <label
+                  key={id}
+                  className={`${styles.channelLabel} ${!enabled ? styles.channelDisabled : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.channels.indexOf(id) > -1}
+                    onChange={() => enabled && toggleChannel(id)}
+                    disabled={!enabled}
+                    className={styles.channelCheckbox}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
 
-          <label className={styles.modalLabel}>
-            Reminder
-            <select className={styles.modalInput} disabled>
-              <option>Coming Soon</option>
+          <div className={styles.formGroup}>
+            <div className={styles.formLabelRow}>
+              <label className={styles.formLabelMuted}>Reminder</label>
+              <span className={styles.comingSoonBadge}>Coming Soon</span>
+            </div>
+            <select disabled className={styles.formSelectDisabled}>
+              <option>{form.reminder}</option>
             </select>
-          </label>
-        </div>
+          </div>
 
-        {error && <div className={styles.warningState}>{error}</div>}
+          {error && (
+            <p className={styles.errorBox}>{error}</p>
+          )}
 
-        <div className={styles.modalFooter}>
-          <button type="button" className={styles.secondaryButton} onClick={props.onClose}>Cancel</button>
-          <button type="submit" className={styles.primaryButton} disabled={props.busy}>
-            {props.busy ? 'Creating...' : 'Create Event'}
+          <button
+            onClick={handleCreateEvent}
+            disabled={loading || !form.title || !form.date}
+            className={styles.submitButton}
+            type="button"
+          >
+            {loading
+              ? <><Loader2 className={styles.spinnerIcon} /> Creating...</>
+              : 'Create Event'}
           </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 };

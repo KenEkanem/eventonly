@@ -58,6 +58,7 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
       UpcomingEventsWebPart,
       {
         ...this.properties,
+        context: this.context,
         currentUserEmail,
         isEditor,
         events: this.normalizeEvents(this.properties.events),
