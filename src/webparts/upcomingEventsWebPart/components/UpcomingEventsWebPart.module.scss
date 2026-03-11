@@ -110,8 +110,9 @@
 .eventCard {
   display: flex;
   flex-direction: row;
+  position: relative;
   border-radius: 12px;
-  border: 1.5px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
   overflow: hidden;
   background: #ffffff;
   min-width: 0;
@@ -122,44 +123,21 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.09);
 }
 
-.cardHoliday {
-  background: #fff0f0;
-  border-color: #fecaca;
+.eventCardDefault {
+  background: linear-gradient(90deg, rgba(14, 116, 144, 0.16), rgba(14, 116, 144, 0.08), rgba(255, 255, 255, 0));
+  border-color: #e2e8f0;
 }
 
-.cardTownhall {
-  background: #eef6ff;
-}
-
-.cardCelebration {
-  background: #f6f2ff;
-}
-
-.cardTraining {
-  background: #effcf7;
-}
-
-.cardSocial {
-  background: #f8fafc;
-}
-
-.cardQuarterly {
-  background: #eef2ff;
-}
-
-.cardCustom {
-  background: #ffffff;
+.eventCardHoliday {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1), rgba(255, 255, 255, 0));
+  border-color: #a7f3d0;
 }
 
 .cardThumbnail {
-  width: 120px;
-  min-width: 120px;
-  height: 90px;
+  width: 112px;
+  min-width: 112px;
   overflow: hidden;
-  background: #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: #e2e8f0;
 }
 
 .cardThumbnailImage {
@@ -168,28 +146,41 @@
   object-fit: cover;
 }
 
-.thumbnailFallback {
+.eventBody {
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+}
+
+.eventBodyWithActions {
+  padding-right: 84px;
+}
+
+.eventBodyRow {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+
+.eventTypeIcon {
   width: 32px;
   height: 32px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #e2e8f0;
+  background: #dbeafe;
+  flex-shrink: 0;
 }
 
 .thumbnailIcon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
-.cardContent {
+.eventBodyContent {
   flex: 1;
   min-width: 0;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .cardTitleRow {
@@ -197,41 +188,30 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  margin-bottom: 4px;
 }
 
 .cardTitle {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
+  color: #0f172a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  min-width: 0;
   margin: 0;
 }
 
-.cardActions {
+.eventCard:hover .cardTitle {
+  color: #0369a1;
+}
+
+.badgeSlot {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-}
-
-.actionButtons {
-  display: flex;
-  gap: 4px;
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.actionButtonsHidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: scale(0.85);
-}
-
-.actionButtonsVisible {
-  opacity: 1;
-  pointer-events: auto;
-  transform: scale(1);
 }
 
 .iconButton {
@@ -253,7 +233,23 @@
 
 .deleteButton {
   color: #b91c1c;
-  transition-delay: 0.03s;
+  transition-delay: 30ms;
+}
+
+.cardActionsOverlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+.eventCard:hover .cardActionsOverlay {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .typeBadge {
@@ -263,6 +259,11 @@
   font-weight: 700;
   white-space: nowrap;
   text-transform: capitalize;
+}
+
+.badgeDefault {
+  background: #0f766e;
+  color: #ffffff;
 }
 
 .badgeHoliday {
@@ -322,10 +323,9 @@
 
 .cardMeta {
   display: flex;
-  flex-direction: row;
   flex-wrap: nowrap;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 8px;
   overflow: hidden;
 }
 
@@ -339,8 +339,7 @@
   color: #0f172a;
   font-size: 12px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .metaIcon {
@@ -579,6 +578,10 @@
 
   .cardMeta {
     flex-wrap: wrap;
+  }
+
+  .eventBodyWithActions {
+    padding-right: 16px;
   }
 }
 
