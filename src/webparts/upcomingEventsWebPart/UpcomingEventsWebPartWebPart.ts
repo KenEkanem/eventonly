@@ -32,6 +32,7 @@ const defaultCalendarSettings: ICalendarSettings = {
 };
 
 export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<IUpcomingEventsWebPartWebPartProps> {
+  private graphClient?: MSGraphClientV3;
   private graphService?: GraphService;
 
   public render(): void {
@@ -41,6 +42,17 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
       .map((email: string) => email.trim().toLowerCase())
       .filter((email: string) => !!email);
     const isEditor = !!currentUserEmail && allowedEditors.indexOf(currentUserEmail) > -1;
+
+    if (this.graphClient) {
+      this.graphService = new GraphService(
+        this.graphClient,
+        {
+          clientId: this.properties.clientId,
+          tenantId: this.properties.tenantId,
+          objectId: this.properties.objectId
+        }
+      );
+    }
 
     const element: React.ReactElement<IUpcomingEventsWebPartProps> = React.createElement(
       UpcomingEventsWebPart,
@@ -100,6 +112,9 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
     this.properties.showDateMetadata = this.properties.showDateMetadata ?? true;
     this.properties.showTimeMetadata = this.properties.showTimeMetadata ?? true;
     this.properties.showLocationMetadata = this.properties.showLocationMetadata ?? true;
+    this.properties.clientId = this.properties.clientId || '';
+    this.properties.tenantId = this.properties.tenantId || '';
+    this.properties.objectId = this.properties.objectId || '';
     this.properties.authorizedEditors = this.properties.authorizedEditors || '';
     this.properties.siteId = this.properties.siteId || '';
     this.properties.listId = this.properties.listId || '';
@@ -107,14 +122,14 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
     this.properties.channelId = this.properties.channelId || '';
     this.properties.groupId = this.properties.groupId || '';
     this.properties.vivaCommunityId = this.properties.vivaCommunityId || '';
+    this.properties.emailRecipients = this.properties.emailRecipients || '';
 
     this.properties.calendarSettings = {
       ...defaultCalendarSettings,
       ...(this.properties.calendarSettings || {})
     };
 
-    const graphClient: MSGraphClientV3 = await this.context.msGraphClientFactory.getClient('3');
-    this.graphService = new GraphService(graphClient);
+    this.graphClient = await this.context.msGraphClientFactory.getClient('3');
 
     return Promise.resolve();
   }
@@ -184,6 +199,38 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
               ]
             },
             {
+              groupName: 'Azure Configuration',
+              groupFields: [
+                PropertyPaneTextField('clientId', {
+                  label: 'Application (Client) ID',
+                  placeholder: 'e.g. a559d1e3-8495-460b-b473-c5cd4685748d',
+                  description: 'Azure AD App Registration Client ID'
+                }),
+                PropertyPaneTextField('tenantId', {
+                  label: 'Directory (Tenant) ID',
+                  placeholder: 'e.g. df3fe24c-6910-4d06-b0e3-0a4af29be80f',
+                  description: 'Azure AD Tenant ID'
+                }),
+                PropertyPaneTextField('objectId', {
+                  label: 'Object ID',
+                  placeholder: 'e.g. 9bb985be-aa24-4934-a3e7-ff9763caf560',
+                  description: 'Azure AD App Object ID'
+                }),
+                PropertyPaneTextField('groupId', {
+                  label: 'Teams Group ID',
+                  description: 'For posting events to Teams calendar'
+                }),
+                PropertyPaneTextField('listId', {
+                  label: 'SharePoint List ID',
+                  description: 'For posting events to Intranet'
+                }),
+                PropertyPaneTextField('emailRecipients', {
+                  label: 'Email Recipients (comma-separated)',
+                  description: 'Emails to notify when an event is created'
+                })
+              ]
+            },
+            {
               groupName: 'Editor Access & Publishing Targets',
               groupFields: [
                 PropertyPaneTextField('authorizedEditors', {
@@ -194,17 +241,11 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
                 PropertyPaneTextField('siteId', {
                   label: 'Intranet site ID'
                 }),
-                PropertyPaneTextField('listId', {
-                  label: 'Intranet list ID'
-                }),
                 PropertyPaneTextField('teamId', {
                   label: 'Teams team ID'
                 }),
                 PropertyPaneTextField('channelId', {
                   label: 'Teams channel ID'
-                }),
-                PropertyPaneTextField('groupId', {
-                  label: 'Teams group ID'
                 }),
                 PropertyPaneTextField('vivaCommunityId', {
                   label: 'Viva Engage community ID'
@@ -339,7 +380,11 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
       channelId: this.properties.channelId,
       groupId: this.properties.groupId,
       vivaCommunityId: this.properties.vivaCommunityId,
-      currentUserEmail: this.context.pageContext.user.email || ''
+      currentUserEmail: this.context.pageContext.user.email || '',
+      emailRecipients: (this.properties.emailRecipients || '')
+        .split(',')
+        .map((email: string) => email.trim())
+        .filter((email: string) => !!email)
     });
   };
 }

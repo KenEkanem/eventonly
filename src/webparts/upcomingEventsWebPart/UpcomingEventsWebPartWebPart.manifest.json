@@ -22,7 +22,14 @@
     "description": { "default": "Upcoming events with calendar" },
     "officeFabricIconFontName": "Page",
     "properties": {
-      "description": "UpcomingEventsWebPart"
+      "description": "UpcomingEventsWebPart",
+      "clientId": "",
+      "tenantId": "",
+      "objectId": "",
+      "authorizedEditors": "",
+      "groupId": "",
+      "listId": "",
+      "emailRecipients": ""
     }
   }]
 }

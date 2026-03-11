@@ -22,6 +22,9 @@ export interface IUpcomingEventsWebPartProps {
   showDateMetadata: boolean;
   showTimeMetadata: boolean;
   showLocationMetadata: boolean;
+  clientId: string;
+  tenantId: string;
+  objectId: string;
   authorizedEditors: string;
   siteId: string;
   listId: string;
@@ -29,6 +32,7 @@ export interface IUpcomingEventsWebPartProps {
   channelId: string;
   groupId: string;
   vivaCommunityId: string;
+  emailRecipients: string;
   isEditor: boolean;
   currentUserEmail: string;
   onEventsChange?: (events: IEvent[]) => void;

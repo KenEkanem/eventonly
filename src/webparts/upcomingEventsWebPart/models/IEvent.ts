@@ -15,6 +15,7 @@ export interface IEvent {
   badgeText: string;
   badgeColorScheme: BadgeColorScheme;
   iconType: string;
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly';
   isHoliday?: boolean;
   userAdded?: boolean;
   sortOrder?: number;

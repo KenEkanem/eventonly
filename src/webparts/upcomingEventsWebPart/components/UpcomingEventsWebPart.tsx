@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { MessageBar, MessageBarType } from '@fluentui/react';
 import { IUpcomingEventsWebPartProps } from './IUpcomingEventsWebPartProps';
 import { EventCalendar } from './EventCalendar';
 import { EventList } from './EventList';
@@ -172,6 +173,7 @@ const UpcomingEventsWebPart: React.FC<IUpcomingEventsWebPartProps> = (props: IUp
         badgeText: payload.type,
         badgeColorScheme: payload.type === 'holiday' ? 'accent' : 'primary',
         iconType: iconByType[payload.type] || 'calendar',
+        recurrence: payload.recurrence,
         userAdded: true,
         sortOrder: userEvents.length
       };
@@ -185,41 +187,46 @@ const UpcomingEventsWebPart: React.FC<IUpcomingEventsWebPartProps> = (props: IUp
 
   const body = (
     <section className={styles.upcomingEventsWebPart} aria-label="Upcoming events web part">
-      <header className={styles.banner}>
-        <div>
-          <h2 className={styles.bannerTitle}>{props.bannerTitle}</h2>
-          <p className={styles.bannerDescription}>{props.bannerDescription}</p>
-        </div>
-        <div className={styles.bannerActions}>
-          {props.showEventCount && <span className={styles.countBadge}>{filteredEvents.length} events</span>}
-          {props.isEditor && (
-            <button type="button" className={styles.primaryButton} onClick={() => setShowAddModal(true)}>
-              + Add Event
-            </button>
-          )}
-        </div>
-      </header>
-
       {loadingHolidays && <div className={styles.loadingState}>Loading Nigerian holidays...</div>}
       {holidayError && <div className={styles.warningState}>{holidayError}</div>}
 
-      <div className={`${styles.mainGrid} ${props.calendarPosition === 'right' ? styles.calendarRight : styles.calendarLeft}`}>
+      <div className={styles.eventsDashboard}>
         {props.calendarSettings.showCalendar && (
-          <div className={styles.calendarPane}>
+          <aside className={styles.calendarPanel}>
             <EventCalendar
               events={mergedEvents}
               selectedDate={selectedDate}
               calendarSettings={props.calendarSettings}
               onDateSelect={setSelectedDate}
             />
-          </div>
+          </aside>
         )}
 
-        <div className={styles.listPane}>
+        <main className={styles.eventsList}>
+          <header className={styles.headerRow}>
+            <div>
+              <h2 className={styles.bannerTitle}>{props.bannerTitle}</h2>
+              <p className={styles.bannerDescription}>{props.bannerDescription}</p>
+            </div>
+            <div className={styles.headerActions}>
+              {props.showEventCount && <span className={styles.eventCountBadge}>{filteredEvents.length} events</span>}
+              {props.isEditor && (
+                <button type="button" className={styles.addEventButton} onClick={() => setShowAddModal(true)}>
+                  + Add Event
+                </button>
+              )}
+            </div>
+          </header>
+
+          {props.isEditor && (!props.clientId || !props.tenantId) && (
+            <MessageBar messageBarType={MessageBarType.warning}>
+              Please configure Azure IDs in the webpart property pane to enable event management.
+            </MessageBar>
+          )}
+
           <EventList
             events={filteredEvents}
             isEditor={props.isEditor}
-            cardLayout={props.cardLayout}
             showEventImages={props.showEventImages}
             showDateMetadata={props.showDateMetadata}
             showTimeMetadata={props.showTimeMetadata}
@@ -228,7 +235,7 @@ const UpcomingEventsWebPart: React.FC<IUpcomingEventsWebPartProps> = (props: IUp
             onEditEvent={handleEditEvent}
             onDeleteEvent={handleDeleteEvent}
           />
-        </div>
+        </main>
       </div>
       {props.isEditor && (
         <AddEventModal

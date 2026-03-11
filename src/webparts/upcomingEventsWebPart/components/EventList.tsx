@@ -7,7 +7,6 @@ import { formatEventDate } from '../utils/dateHelpers';
 export interface IEventListProps {
   events: IEvent[];
   isEditor: boolean;
-  cardLayout: 'horizontal' | 'vertical';
   showEventImages: boolean;
   showDateMetadata: boolean;
   showTimeMetadata: boolean;
@@ -29,7 +28,6 @@ export const EventList: React.FC<IEventListProps> = (props: IEventListProps) => 
           key={event.id}
           event={event}
           isEditor={props.isEditor}
-          cardLayout={props.cardLayout}
           showEventImages={props.showEventImages}
           showDateMetadata={props.showDateMetadata}
           showTimeMetadata={props.showTimeMetadata}

@@ -4,10 +4,12 @@ import {
   CalendarDays,
   Camera,
   Clock3,
+  Pencil,
   Flag,
   MapPin,
   PartyPopper,
   Star,
+  Trash2,
   Trophy,
   Users
 } from 'lucide-react';
@@ -16,7 +18,6 @@ import { IEvent } from '../models/IEvent';
 
 export interface IEventCardProps {
   event: IEvent;
-  cardLayout: 'horizontal' | 'vertical';
   showEventImages: boolean;
   showDateMetadata: boolean;
   showTimeMetadata: boolean;
@@ -28,7 +29,7 @@ export interface IEventCardProps {
 }
 
 const resolveIcon = (iconType: string): JSX.Element => {
-  const iconClass = styles.cardIcon;
+  const iconClass = styles.thumbnailIcon;
 
   switch (iconType) {
     case 'users':
@@ -54,82 +55,98 @@ const resolveIcon = (iconType: string): JSX.Element => {
 
 export const EventCard: React.FC<IEventCardProps> = (props: IEventCardProps) => {
   const [hovered, setHovered] = React.useState<boolean>(false);
-  const categoryClassMap: Record<IEvent['category'], string> = {
-    townhall: styles.categoryTownhall,
-    celebration: styles.categoryCelebration,
-    training: styles.categoryTraining,
-    social: styles.categorySocial,
-    holiday: styles.categoryHoliday,
-    quarterly: styles.categoryQuarterly,
-    custom: styles.categoryCustom
+  const cardClassMap: Record<IEvent['category'], string> = {
+    townhall: styles.cardTownhall,
+    celebration: styles.cardCelebration,
+    training: styles.cardTraining,
+    social: styles.cardSocial,
+    holiday: styles.cardHoliday,
+    quarterly: styles.cardQuarterly,
+    custom: styles.cardCustom
   };
-  const categoryClass = categoryClassMap[props.event.category] || styles.categoryCustom;
+  const badgeClassMap: Record<IEvent['category'], string> = {
+    townhall: styles.badgeTownhall,
+    celebration: styles.badgeCelebration,
+    training: styles.badgeTraining,
+    social: styles.badgeSocial,
+    holiday: styles.badgeHoliday,
+    quarterly: styles.badgeQuarterly,
+    custom: styles.badgeCustom
+  };
+  const cardClass = cardClassMap[props.event.category] || styles.cardCustom;
+  const badgeClass = badgeClassMap[props.event.category] || styles.badgeCustom;
   const isHoliday = !!props.event.isHoliday || props.event.category === 'holiday';
-  const isUserAdded = !isHoliday;
+  const isUserAdded = props.event.userAdded !== undefined ? props.event.userAdded : !isHoliday;
   const showActionControls = props.isEditor && isUserAdded;
 
   return (
-    <article
-      className={`${styles.eventCard} ${styles[props.cardLayout]} ${categoryClass} ${isUserAdded ? styles.userAddedCard : ''}`}
+    <div
+      className={`${styles.eventCard} ${cardClass}`}
       aria-label={props.event.title}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {props.showEventImages && props.event.imageUrl && (
-        <div className={styles.cardImageWrap}>
+      <div className={styles.cardThumbnail}>
+        {props.showEventImages && props.event.imageUrl ? (
           <img
             src={props.event.imageUrl}
             alt={props.event.imageAlt || props.event.title}
             loading="lazy"
-            className={styles.cardImage}
+            className={styles.cardThumbnailImage}
           />
-        </div>
-      )}
+        ) : (
+          <span className={styles.thumbnailFallback}>{resolveIcon(props.event.iconType)}</span>
+        )}
+      </div>
       <div className={styles.cardContent}>
-        <div className={styles.cardRowTitle}>
-          <div className={styles.cardHeader}>
-            <span className={styles.iconCircle}>{resolveIcon(props.event.iconType)}</span>
-            <h3 className={styles.cardTitle}>{props.event.title}</h3>
-          </div>
-          <div className={styles.topRightSlot}>
+        <div className={styles.cardTitleRow}>
+          <h3 className={styles.cardTitle}>{props.event.title}</h3>
+          <div className={styles.cardActions}>
             {showActionControls && (
-              <div className={`${styles.actionControls} ${hovered ? styles.actionControlsVisible : ''}`}>
+              <div className={`${styles.actionButtons} ${hovered ? styles.actionButtonsVisible : styles.actionButtonsHidden}`}>
                 <button
                   type="button"
-                  className={styles.actionButton}
+                  className={`${styles.iconButton} ${styles.editButton}`}
                   onClick={() => props.onEditEvent?.(props.event)}
                   aria-label={`Edit ${props.event.title}`}
                 >
-                  Edit
+                  <Pencil size={14} />
                 </button>
                 <button
                   type="button"
-                  className={`${styles.actionButton} ${styles.deleteButton}`}
+                  className={`${styles.iconButton} ${styles.deleteButton}`}
                   onClick={() => props.onDeleteEvent?.(props.event)}
                   aria-label={`Delete ${props.event.title}`}
                 >
-                  Delete
+                  <Trash2 size={14} />
                 </button>
               </div>
             )}
-            <span className={styles.badge}>{props.event.badgeText || (isHoliday ? 'Holiday' : 'Event')}</span>
+            {!showActionControls && (
+              <span className={`${styles.typeBadge} ${badgeClass}`}>
+                {props.event.badgeText || props.event.category}
+              </span>
+            )}
+            {props.event.recurrence && props.event.recurrence !== 'none' && (
+              <span className={styles.recurrenceTag}>{props.event.recurrence}</span>
+            )}
           </div>
         </div>
 
         <p className={styles.cardDescription}>{props.event.description}</p>
 
-        <div className={styles.metadataRow}>
+        <div className={styles.cardMeta}>
           {props.showDateMetadata && (
-            <span className={styles.metaPill}><CalendarDays className={styles.metaIcon} aria-hidden="true" />{props.dateLabel}</span>
+            <span className={styles.metaBubble}><CalendarDays className={styles.metaIcon} aria-hidden="true" />{props.dateLabel}</span>
           )}
           {props.showTimeMetadata && (
-            <span className={styles.metaPill}><Clock3 className={styles.metaIcon} aria-hidden="true" />{props.event.time}</span>
+            <span className={styles.metaBubble}><Clock3 className={styles.metaIcon} aria-hidden="true" />{props.event.time}</span>
           )}
           {props.showLocationMetadata && (
-            <span className={styles.metaPill}><MapPin className={styles.metaIcon} aria-hidden="true" />{props.event.location}</span>
+            <span className={styles.metaBubble}><MapPin className={styles.metaIcon} aria-hidden="true" />{props.event.location}</span>
           )}
         </div>
       </div>
-    </article>
+    </div>
   );
 };

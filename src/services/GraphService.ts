@@ -12,6 +12,13 @@ export interface IWebpartConfig {
   groupId?: string;
   vivaCommunityId?: string;
   currentUserEmail?: string;
+  emailRecipients?: string[];
+}
+
+export interface IAzureAppConfig {
+  clientId: string;
+  tenantId: string;
+  objectId: string;
 }
 
 export interface ICreateEventPayload {
@@ -45,11 +52,19 @@ interface IGraphCalendarEventPayload {
   extensions: Array<{
     extensionName: 'com.company.eventType';
     eventType: EventType;
+    recurrence: EventRecurrence;
   }>;
 }
 
 export class GraphService {
-  constructor(private readonly client: MSGraphClientV3) {}
+  constructor(
+    private readonly client: MSGraphClientV3,
+    private readonly azureConfig: IAzureAppConfig
+  ) {}
+
+  public hasAzureConfiguration(): boolean {
+    return !!(this.azureConfig.clientId && this.azureConfig.tenantId);
+  }
 
   public async createEvent(payload: ICreateEventPayload, channels: PublishingChannel[], config: IWebpartConfig): Promise<void[]> {
     const graphPayload = this.toGraphEventPayload(payload);
@@ -69,7 +84,7 @@ export class GraphService {
     }
 
     if (channels.indexOf('email') > -1) {
-      tasks.push(this.sendEmailInvite(graphPayload, config.currentUserEmail));
+      tasks.push(this.sendEmailInvite(graphPayload, config.emailRecipients, config.currentUserEmail));
     }
 
     return Promise.all(tasks);
@@ -96,7 +111,8 @@ export class GraphService {
       extensions: [
         {
           extensionName: 'com.company.eventType',
-          eventType: payload.type
+          eventType: payload.type,
+          recurrence: payload.recurrence
         }
       ]
     };
@@ -153,10 +169,13 @@ export class GraphService {
     });
   }
 
-  private async sendEmailInvite(payload: IGraphCalendarEventPayload, currentUserEmail?: string): Promise<void> {
-    if (!currentUserEmail) {
+  private async sendEmailInvite(payload: IGraphCalendarEventPayload, emailRecipients?: string[], currentUserEmail?: string): Promise<void> {
+    const recipients = (emailRecipients || []).filter((email: string) => !!email.trim());
+    if (recipients.length === 0 && !currentUserEmail) {
       return;
     }
+
+    const normalizedRecipients = recipients.length > 0 ? recipients : [currentUserEmail || ''];
 
     await this.client.api('/me/sendMail').post({
       message: {
@@ -165,13 +184,13 @@ export class GraphService {
           contentType: 'HTML',
           content: `<h3>${payload.subject}</h3>${payload.body.content}<p><strong>Location:</strong> ${payload.location.displayName}</p><p><strong>Start:</strong> ${payload.start.dateTime} UTC</p><p><strong>End:</strong> ${payload.end.dateTime} UTC</p>`
         },
-        toRecipients: [
-          {
+        toRecipients: normalizedRecipients
+          .filter((recipient: string) => !!recipient)
+          .map((recipient: string) => ({
             emailAddress: {
-              address: currentUserEmail
+              address: recipient
             }
-          }
-        ]
+          }))
       },
       saveToSentItems: true
     });
