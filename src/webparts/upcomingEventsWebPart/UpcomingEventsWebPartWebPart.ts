@@ -36,12 +36,18 @@ export default class UpcomingEventsWebPartWebPart extends BaseClientSideWebPart<
   private graphService?: GraphService;
 
   public render(): void {
-    const currentUserEmail = (this.context.pageContext.user.email || '').trim().toLowerCase();
+    const contextUser = this.context.pageContext.user;
+    const directEmail = (contextUser.email || '').trim().toLowerCase();
+    const loginEmailMatch = (contextUser.loginName || '').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    const loginEmail = (loginEmailMatch ? loginEmailMatch[0] : '').trim().toLowerCase();
+    const currentUserEmail = directEmail || loginEmail;
     const allowedEditors = (this.properties.authorizedEditors || '')
       .split(',')
       .map((email: string) => email.trim().toLowerCase())
       .filter((email: string) => !!email);
-    const isEditor = !!currentUserEmail && allowedEditors.indexOf(currentUserEmail) > -1;
+    const isEditor = allowedEditors.length === 0
+      ? !!currentUserEmail
+      : (!!currentUserEmail && allowedEditors.indexOf(currentUserEmail) > -1);
 
     if (this.graphClient) {
       this.graphService = new GraphService(

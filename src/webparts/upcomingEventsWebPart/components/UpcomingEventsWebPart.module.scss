@@ -354,6 +354,8 @@
   padding: 12px;
   background: #ffffff;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .calendarHeader {
@@ -373,12 +375,41 @@
   background: linear-gradient(180deg, #eff6ff, #f8fafc);
 }
 
+.dayPicker {
+  width: 100%;
+  min-width: 0;
+  --rdp-day-width: 32px;
+  --rdp-day-height: 32px;
+  --rdp-day_button-width: 32px;
+  --rdp-day_button-height: 32px;
+  --rdp-nav_button-width: 32px;
+  --rdp-nav_button-height: 32px;
+}
+
+.dayPicker :global(.rdp-root),
+.dayPicker :global(.rdp-month),
+.dayPicker :global(.rdp-month_grid) {
+  width: 100%;
+  min-width: 0;
+}
+
+.dayPicker :global(.rdp-month_grid) {
+  table-layout: fixed;
+}
+
 .dayPicker :global(.rdp-months) {
   justify-content: center;
+  width: 100%;
 }
 
 .dayPicker :global(.rdp-caption_label) {
   font-weight: 700;
+}
+
+.dayPicker :global(.rdp-weekday),
+.dayPicker :global(.rdp-day) {
+  min-width: 0;
+  text-align: center;
 }
 
 .dayPicker :global(.rdp-day) {
