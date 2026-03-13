@@ -791,6 +791,17 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 6px;
   flex: 1;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.event-section-month-enter-next {
+  opacity: 0.98;
+  transform: translateX(6px);
+}
+
+.event-section-month-enter-prev {
+  opacity: 0.98;
+  transform: translateX(-6px);
 }
 
 .event-section-day-cell {
@@ -806,6 +817,7 @@
   justify-content: center;
   gap: 4px;
   padding: 4px;
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 }
 
 .event-section-day-cell:hover {
@@ -868,10 +880,13 @@
   grid-template-columns: auto 1fr auto;
   gap: 12px;
   align-items: center;
+  transition: background-color 200ms ease, box-shadow 200ms ease;
+  animation: eventSectionStaggerIn 220ms ease both;
 }
 
 .event-section-item:hover {
   background: #f3f4f6;
+  box-shadow: 0 3px 10px rgba(17, 24, 39, 0.07);
 }
 
 .event-section-date-badge {
@@ -933,6 +948,26 @@
   font-weight: 500;
   color: #111827;
   background: #e5e7eb;
+}
+
+.event-section-empty-state {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  padding: 12px 2px 2px;
+}
+
+@keyframes eventSectionStaggerIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 768px) {

@@ -25,6 +25,8 @@ const toDayKey = (value: Date): string => format(value, 'yyyy-MM-dd');
 export const EventSection: React.FC<IEventSectionProps> = (props: IEventSectionProps) => {
   const [displayMonth, setDisplayMonth] = React.useState<Date>(startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
+  const [monthDirection, setMonthDirection] = React.useState<'prev' | 'next'>('next');
+  const [monthAnimating, setMonthAnimating] = React.useState<boolean>(false);
 
   const dayEventCount = React.useMemo(() => {
     const map: Record<string, number> = {};
@@ -68,26 +70,41 @@ export const EventSection: React.FC<IEventSectionProps> = (props: IEventSectionP
   };
 
   const filteredUpcoming = React.useMemo(() => {
-    const base = props.events
+    const sorted = props.events
       .slice()
       .sort((left: IEvent, right: IEvent) => left.date.getTime() - right.date.getTime());
 
-    if (!selectedDate) {
-      return base.slice(0, 7);
-    }
-
-    const sameDay = base.filter((event: IEvent) => isSameDay(event.date, selectedDate));
-    return (sameDay.length > 0 ? sameDay : base).slice(0, 7);
+    return sorted.filter((event: IEvent) => isSameDay(event.date, selectedDate));
   }, [props.events, selectedDate]);
 
   const goPrevMonth = (): void => {
+    setMonthDirection('prev');
+    setMonthAnimating(true);
     const next = new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1);
     setDisplayMonth(next);
   };
 
   const goNextMonth = (): void => {
+    setMonthDirection('next');
+    setMonthAnimating(true);
     const next = new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1);
     setDisplayMonth(next);
+  };
+
+  React.useEffect(() => {
+    if (!monthAnimating) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setMonthAnimating(false), 220);
+    return () => window.clearTimeout(timeout);
+  }, [monthAnimating]);
+
+  const onDayKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, day: Date): void => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setSelectedDate(day);
+    }
   };
 
   return (
@@ -119,7 +136,11 @@ export const EventSection: React.FC<IEventSectionProps> = (props: IEventSectionP
           ))}
         </div>
 
-        <div className="event-section-date-grid">
+        <div
+          className={`event-section-date-grid ${monthAnimating ? `event-section-month-enter-${monthDirection}` : ''}`}
+          role="grid"
+          aria-label={`Calendar for ${format(displayMonth, 'MMMM yyyy')}`}
+        >
           {gridDays.map((day: Date) => {
             const key = toDayKey(day);
             const count = dayEventCount[key] || 0;
@@ -138,7 +159,10 @@ export const EventSection: React.FC<IEventSectionProps> = (props: IEventSectionP
                   isOtherMonth ? 'event-section-day-other-month' : ''
                 ].join(' ').trim()}
                 aria-label={`Select ${format(day, 'EEEE, MMMM d, yyyy')}`}
+                aria-selected={isSelected}
+                role="gridcell"
                 onClick={() => setSelectedDate(day)}
+                onKeyDown={(event) => onDayKeyDown(event, day)}
               >
                 <span className="event-section-day-number">{format(day, 'd')}</span>
                 {count > 0 && (
@@ -156,24 +180,35 @@ export const EventSection: React.FC<IEventSectionProps> = (props: IEventSectionP
 
       <article className="event-section-upcoming-card">
         <h3 className="event-section-upcoming-title">Upcoming Events</h3>
-        <div className="event-section-upcoming-list">
-          {filteredUpcoming.map((event: IEvent) => (
-            <div key={event.id} className="event-section-item" tabIndex={0} role="article" aria-label={event.title}>
-              <div className="event-section-date-badge">
-                <span className="event-section-date-day">{format(event.date, 'd')}</span>
-                <span className="event-section-date-month">{format(event.date, 'MMM')}</span>
-              </div>
+        {filteredUpcoming.length === 0 ? (
+          <p className="event-section-empty-state">No events for this date</p>
+        ) : (
+          <div className="event-section-upcoming-list" role="list" aria-label="Upcoming events">
+            {filteredUpcoming.map((event: IEvent, index: number) => (
+              <div
+                key={event.id}
+                className="event-section-item"
+                tabIndex={0}
+                role="listitem"
+                aria-label={event.title}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="event-section-date-badge">
+                  <span className="event-section-date-day">{format(event.date, 'd')}</span>
+                  <span className="event-section-date-month">{format(event.date, 'MMM')}</span>
+                </div>
 
-              <div className="event-section-item-content">
-                <h4 className="event-section-item-title">{event.title}</h4>
-                <p className="event-section-item-time">{event.time} - {event.time === 'All Day' ? 'All Day' : 'Scheduled'}</p>
-                <p className="event-section-item-location">{event.location}</p>
-              </div>
+                <div className="event-section-item-content">
+                  <h4 className="event-section-item-title">{event.title}</h4>
+                  <p className="event-section-item-time">{event.time} - {event.time === 'All Day' ? 'All Day' : 'Scheduled'}</p>
+                  <p className="event-section-item-location">{event.location}</p>
+                </div>
 
-              <span className="event-section-status-pill">{getEventStatus(event)}</span>
-            </div>
-          ))}
-        </div>
+                <span className="event-section-status-pill">{getEventStatus(event)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </article>
     </section>
   );

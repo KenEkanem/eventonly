@@ -1,7 +1,9 @@
 import * as React from 'react';
 import { MessageBar, MessageBarType } from '@fluentui/react';
 import { IUpcomingEventsWebPartProps } from './IUpcomingEventsWebPartProps';
-import { EventSection } from './EventSection';
+import { EventCalendar } from './EventCalendar';
+import { EventList } from './EventList';
+import { AddEventModal } from './AddEventModal';
 import styles from './UpcomingEventsWebPart.module.scss';
 import { IEvent } from '../models/IEvent';
 import { HolidayService } from '../services/HolidayService';
@@ -29,10 +31,12 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, IErro
 }
 
 const UpcomingEventsWebPart: React.FC<IUpcomingEventsWebPartProps> = (props: IUpcomingEventsWebPartProps) => {
+  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const [userEvents, setUserEvents] = React.useState<IEvent[]>(normalizeEvents(props.events || []));
   const [holidayEvents, setHolidayEvents] = React.useState<IEvent[]>([]);
   const [loadingHolidays, setLoadingHolidays] = React.useState<boolean>(false);
   const [holidayError, setHolidayError] = React.useState<string>('');
+  const [showAddModal, setShowAddModal] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     setUserEvents(normalizeEvents(props.events || []));
@@ -97,8 +101,51 @@ const UpcomingEventsWebPart: React.FC<IUpcomingEventsWebPartProps> = (props: IUp
   }, [userEvents, holidayEvents, props.sortOrder]);
 
   const filteredEvents = React.useMemo(() => {
-    return filterEvents(mergedEvents, undefined, props.showPastEvents, props.eventsToShow);
-  }, [mergedEvents, props.showPastEvents, props.eventsToShow]);
+    return filterEvents(mergedEvents, selectedDate, props.showPastEvents, props.eventsToShow);
+  }, [mergedEvents, selectedDate, props.showPastEvents, props.eventsToShow]);
+
+  const persistEvents = React.useCallback((next: IEvent[]) => {
+    const normalized = normalizeEvents(next);
+    setUserEvents(normalized);
+    props.onEventsChange?.(normalized);
+  }, [props.onEventsChange]);
+
+  const handleDeleteEvent = React.useCallback((event: IEvent) => {
+    if (event.isHoliday || event.category === 'holiday') {
+      return;
+    }
+
+    persistEvents(userEvents.filter((item: IEvent) => item.id !== event.id));
+  }, [persistEvents, userEvents]);
+
+  const handleEditEvent = React.useCallback((event: IEvent) => {
+    if (event.isHoliday || event.category === 'holiday') {
+      return;
+    }
+
+    const nextTitle = window.prompt('Edit event title', event.title);
+    if (nextTitle === null) {
+      return;
+    }
+
+    const nextDescription = window.prompt('Edit event description', event.description || '');
+    if (nextDescription === null) {
+      return;
+    }
+
+    persistEvents(
+      userEvents.map((item: IEvent) => (
+        item.id === event.id
+          ? { ...item, title: nextTitle.trim() || item.title, description: nextDescription.trim() }
+          : item
+      ))
+    );
+  }, [persistEvents, userEvents]);
+
+  const handleEventCreated = React.useCallback(() => {
+    setShowAddModal(false);
+    setUserEvents(normalizeEvents(props.events || []));
+  }, [props.events]);
 
   const body = (
     <section className={styles.upcomingEventsWebPart} aria-label="Upcoming events web part">
@@ -111,7 +158,60 @@ const UpcomingEventsWebPart: React.FC<IUpcomingEventsWebPartProps> = (props: IUp
         </MessageBar>
       )}
 
-      <EventSection events={filteredEvents} />
+      <div className={styles.eventsDashboard}>
+        {props.calendarSettings.showCalendar && (
+          <aside className={styles.calendarPanel}>
+            <EventCalendar
+              events={mergedEvents}
+              selectedDate={selectedDate}
+              calendarSettings={props.calendarSettings}
+              onDateSelect={setSelectedDate}
+            />
+          </aside>
+        )}
+
+        <main className={styles.eventsList}>
+          <header className={styles.headerRow}>
+            <div>
+              <h2 className={styles.bannerTitle}>{props.bannerTitle}</h2>
+              <p className={styles.bannerDescription}>{props.bannerDescription}</p>
+            </div>
+            <div className={styles.headerActions}>
+              {props.showEventCount && <span className={styles.eventCountBadge}>{filteredEvents.length} events</span>}
+              {props.isEditor && (
+                <button type="button" className={styles.addEventButton} onClick={() => setShowAddModal(true)}>
+                  + Add Event
+                </button>
+              )}
+            </div>
+          </header>
+
+          <EventList
+            events={filteredEvents}
+            isEditor={props.isEditor}
+            showEventImages={props.showEventImages}
+            showDateMetadata={props.showDateMetadata}
+            showTimeMetadata={props.showTimeMetadata}
+            showLocationMetadata={props.showLocationMetadata}
+            dateFormat={props.calendarSettings.dateFormat}
+            onEditEvent={handleEditEvent}
+            onDeleteEvent={handleDeleteEvent}
+          />
+        </main>
+      </div>
+
+      {props.isEditor && (
+        <AddEventModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onEventCreated={handleEventCreated}
+          context={props.context}
+          siteId={props.siteId}
+          listId={props.listId}
+          groupId={props.groupId}
+          emailRecipients={props.emailRecipients}
+        />
+      )}
     </section>
   );
 
